@@ -1,0 +1,412 @@
+{
+  "topic": "Identify the biomes",
+  "theme": "retro",
+  "label_style": "abc",
+  "video_format": "9:16",
+  "background": "http://localhost:3001/public/generated/media-1750893708922.png",
+  "background_music": "http://localhost:3001/public/generated/media-1750893708937.mp3",
+  "watermark": "@goofyaaavideo",
+  "intro_duration": 5.3,
+  "intro_audio": "http://localhost:3001/audio/3c38150e-4a52-4ffb-a805-439829ffac15.mp3",
+  "intro_audio_captions": [
+    {
+      "text": "Think",
+      "start": 0,
+      "end": 0.28
+    },
+    {
+      "text": "you",
+      "start": 0.28,
+      "end": 0.4
+    },
+    {
+      "text": "know",
+      "start": 0.4,
+      "end": 0.56
+    },
+    {
+      "text": "your",
+      "start": 0.56,
+      "end": 0.94
+    },
+    {
+      "text": "biomes",
+      "start": 0.94,
+      "end": 1.26
+    },
+    {
+      "text": "Prove",
+      "start": 1.84,
+      "end": 1.96
+    },
+    {
+      "text": "it",
+      "start": 1.86,
+      "end": 2.06
+    },
+    {
+      "text": "You",
+      "start": 2.36,
+      "end": 2.48
+    },
+    {
+      "text": "only",
+      "start": 2.48,
+      "end": 2.7
+    },
+    {
+      "text": "have",
+      "start": 2.7,
+      "end": 2.92
+    },
+    {
+      "text": "four",
+      "start": 2.92,
+      "end": 3.24
+    },
+    {
+      "text": "seconds",
+      "start": 3.24,
+      "end": 3.54
+    },
+    {
+      "text": "per",
+      "start": 3.54,
+      "end": 3.8
+    },
+    {
+      "text": "question",
+      "start": 3.8,
+      "end": 4.1
+    },
+    {
+      "text": "to",
+      "start": 4.1,
+      "end": 4.34
+    },
+    {
+      "text": "show",
+      "start": 4.34,
+      "end": 4.5
+    },
+    {
+      "text": "your",
+      "start": 4.5,
+      "end": 4.74
+    },
+    {
+      "text": "stuff",
+      "start": 4.74,
+      "end": 5.02
+    }
+  ],
+  "outro_duration": 3.5,
+  "outro_audio": "http://localhost:3001/audio/4935862b-3523-49f7-b44a-f700aced5d34.mp3",
+  "outro_audio_captions": [
+    {
+      "text": "Did",
+      "start": 0,
+      "end": 0.22
+    },
+    {
+      "text": "you",
+      "start": 0.22,
+      "end": 0.4
+    },
+    {
+      "text": "ace",
+      "start": 0.4,
+      "end": 0.56
+    },
+    {
+      "text": "it",
+      "start": 0.56,
+      "end": 0.86
+    },
+    {
+      "text": "Drop",
+      "start": 1.1,
+      "end": 1.2200000000000002
+    },
+    {
+      "text": "a",
+      "start": 1.12,
+      "end": 1.42
+    },
+    {
+      "text": "comment",
+      "start": 1.42,
+      "end": 1.58
+    },
+    {
+      "text": "or",
+      "start": 1.58,
+      "end": 1.82
+    },
+    {
+      "text": "share",
+      "start": 1.82,
+      "end": 1.96
+    },
+    {
+      "text": "with",
+      "start": 1.96,
+      "end": 2.14
+    },
+    {
+      "text": "a",
+      "start": 2.14,
+      "end": 2.36
+    },
+    {
+      "text": "fellow",
+      "start": 2.36,
+      "end": 2.54
+    },
+    {
+      "text": "Nature",
+      "start": 2.54,
+      "end": 2.9
+    },
+    {
+      "text": "Buff",
+      "start": 2.9,
+      "end": 3.22
+    }
+  ],
+  "animation_duration": 4,
+  "table_duration": 1,
+  "cta": {
+    "text": "Smash that like if you nailed the biomes quiz by question 3!",
+    "after_question": 3,
+    "duration": 3.8,
+    "audio": "http://localhost:3001/audio/a37007ca-bcbd-4505-bb32-92032385446e.mp3",
+    "captions": [
+      {
+        "text": "Smash",
+        "start": 0,
+        "end": 0.44
+      },
+      {
+        "text": "that",
+        "start": 0.44,
+        "end": 0.68
+      },
+      {
+        "text": "like",
+        "start": 0.68,
+        "end": 0.86
+      },
+      {
+        "text": "if",
+        "start": 0.86,
+        "end": 1.02
+      },
+      {
+        "text": "you",
+        "start": 1.02,
+        "end": 1.28
+      },
+      {
+        "text": "nailed",
+        "start": 1.28,
+        "end": 1.46
+      },
+      {
+        "text": "the",
+        "start": 1.46,
+        "end": 1.7
+      },
+      {
+        "text": "biomes",
+        "start": 1.7,
+        "end": 2.04
+      },
+      {
+        "text": "quiz",
+        "start": 2.04,
+        "end": 2.4
+      },
+      {
+        "text": "by",
+        "start": 2.4,
+        "end": 2.64
+      },
+      {
+        "text": "question",
+        "start": 2.64,
+        "end": 3
+      },
+      {
+        "text": "three",
+        "start": 3,
+        "end": 3.4
+      }
+    ]
+  },
+  "cut_ins": [
+    {
+      "text": "Ready for a curveball? Here it comes...",
+      "after_question": 4,
+      "duration": 2,
+      "audio": "http://localhost:3001/audio/84ad4f96-14d9-4c89-a720-b7e33b9682bd.mp3",
+      "captions": [
+        {
+          "text": "Ready",
+          "start": 0,
+          "end": 0.26
+        },
+        {
+          "text": "for",
+          "start": 0.26,
+          "end": 0.44
+        },
+        {
+          "text": "a",
+          "start": 0.44,
+          "end": 0.56
+        },
+        {
+          "text": "curveball",
+          "start": 0.56,
+          "end": 1
+        },
+        {
+          "text": "Here",
+          "start": 1.22,
+          "end": 1.3399999999999999
+        },
+        {
+          "text": "it",
+          "start": 1.26,
+          "end": 1.38
+        },
+        {
+          "text": "comes",
+          "start": 1.38,
+          "end": 1.64
+        }
+      ]
+    }
+  ],
+  "quiz": {
+    "title": "Identify the biomes",
+    "questions": [
+      {
+        "question_id": 1,
+        "shot": "http://localhost:3001/images/211918fec28fd534400c1be765efc8e1.jpg",
+        "question_text": "Z jakiego filmu pochodzi ta scena?",
+        "options": {
+          "A": "Tundra",
+          "B": "Desert",
+          "C": "Savanna",
+          "D": "Rainforest"
+        },
+        "correct_option": "D",
+        "begin_audio": "http://localhost:3001/audio/59f260a8-6b3b-4282-b490-b6d0791e5e65.mp3",
+        "end_audio": "http://localhost:3001/audio/e45f4f26-ef0c-4ffe-bc3f-71cbb9c4af47.mp3",
+        "end_audio_duration": 0.9,
+        "captions": [
+          {
+            "text": "Rainforest",
+            "start": 0,
+            "end": 0.78
+          }
+        ]
+      },
+      {
+        "question_id": 2,
+        "shot": "http://localhost:3001/images/80dddc627ba0885e24b3e739c3a42231.jpg",
+        "question_text": "Z jakiego filmu pochodzi ta scena?",
+        "options": {
+          "A": "Tundra",
+          "B": "Desert",
+          "C": "Rainforest",
+          "D": "Savanna"
+        },
+        "correct_option": "B",
+        "begin_audio": "http://localhost:3001/audio/0d4d6eb5-188a-48f5-b980-aa4cd7816a4e.mp3",
+        "end_audio": "http://localhost:3001/audio/164e1a81-08ed-4e80-a064-974edcf36705.mp3",
+        "end_audio_duration": 1.1,
+        "captions": [
+          {
+            "text": "Desert",
+            "start": 0,
+            "end": 0.5
+          }
+        ]
+      },
+      {
+        "question_id": 3,
+        "shot": "http://localhost:3001/images/441ec103c818158c6dd1eefbc09f50f5.jpg",
+        "question_text": "Z jakiego filmu pochodzi ta scena?",
+        "options": {
+          "A": "Tundra",
+          "B": "Rainforest",
+          "C": "Desert",
+          "D": "Savanna"
+        },
+        "correct_option": "A",
+        "begin_audio": "http://localhost:3001/audio/57d1b183-78f6-4a74-9758-f796ea98d413.mp3",
+        "end_audio": "http://localhost:3001/audio/cf1d653b-aad3-48ec-a692-fa9af8242136.mp3",
+        "end_audio_duration": 1.2,
+        "captions": [
+          {
+            "text": "Tondra",
+            "start": 0,
+            "end": 0.58
+          }
+        ]
+      },
+      {
+        "question_id": 4,
+        "shot": "http://localhost:3001/images/0a6ec934c7ae8be3b46be4b2775f1f51.jpg",
+        "question_text": "Z jakiego filmu pochodzi ta scena?",
+        "options": {
+          "A": "Rainforest",
+          "B": "Tundra",
+          "C": "Savanna",
+          "D": "Desert"
+        },
+        "correct_option": "C",
+        "begin_audio": "http://localhost:3001/audio/e135307a-2fdd-4233-95f5-2df2db739830.mp3",
+        "end_audio": "http://localhost:3001/audio/34efbc12-3658-42f8-989f-620955f2abfb.mp3",
+        "end_audio_duration": 1.1,
+        "captions": [
+          {
+            "text": "Savannah",
+            "start": 0,
+            "end": 0.84
+          }
+        ]
+      },
+      {
+        "question_id": 5,
+        "shot": "http://localhost:3001/images/532c000890f5b31ab64ffb596c809de1.jpg",
+        "question_text": "Z jakiego filmu pochodzi ta scena?",
+        "options": {
+          "A": "Tropical Rainforest",
+          "B": "Savanna",
+          "C": "Tundra",
+          "D": "Coral Reef"
+        },
+        "correct_option": "D",
+        "begin_audio": "http://localhost:3001/audio/23e00355-40ea-4211-99a1-91f8310eae74.mp3",
+        "end_audio": "http://localhost:3001/audio/a81739e3-e5c3-46c3-873c-8c965410f755.mp3",
+        "end_audio_duration": 1.1,
+        "captions": [
+          {
+            "text": "Coral",
+            "start": 0,
+            "end": 0.54
+          },
+          {
+            "text": "Reef",
+            "start": 0.54,
+            "end": 0.86
+          }
+        ]
+      }
+    ]
+  }
+}
