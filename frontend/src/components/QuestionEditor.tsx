@@ -1,5 +1,5 @@
 'use client';
-
+import { backendUrl } from './backend';
 import { useState, useEffect } from 'react';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle
@@ -17,9 +17,7 @@ import { QuizQuestion } from '@/types/quiz';
 import { getAnswerLabel, shuffleAnswers } from '@/lib/quiz-utils';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
-/**
- * Utility — check whether current browser can render a given MIME type via <img src>
- */
+
 function browserSupportsType(mime: string): boolean {
   try {
     const canvas = document.createElement('canvas');
@@ -29,10 +27,7 @@ function browserSupportsType(mime: string): boolean {
   }
 }
 
-/**
- * Convert an image (e.g. WEBP) to PNG data‑url so that every browser can display it.
- * Falls back to original url if conversion fails (e.g. CORS).
- */
+
 async function convertImageToPng(url: string): Promise<string> {
   try {
     const img = new Image();
@@ -73,20 +68,16 @@ export function QuestionEditor({
   questions, labelStyle, onQuestionsChange, onLabelStyleChange
 }: QuestionEditorProps) {
   const [fileNames, setFileNames] = useState<Record<string, string>>({});
-  /** Map of question.id → displayUrl (may be converted PNG data‑url) */
+  /** MAP question.id → displayUrl */
   const [displayUrls, setDisplayUrls] = useState<Record<string, string>>({});
   
-  // 🔥 NEW: Sequential enhancement state
+  // Sequential enhancement state
   const [isSequentialMode, setIsSequentialMode] = useState(false);
   const [currentEnhancingIndex, setCurrentEnhancingIndex] = useState(-1);
   const [enhancementQueue, setEnhancementQueue] = useState<number[]>([]);
   const [isAnyEnhancing, setIsAnyEnhancing] = useState(false);
 
-  /**
-   * Whenever mediaUrl changes, prepare a display‑safe url:
-   *  - if image is WEBP and browser lacks support ➜ convert to PNG data‑url
-   *  - otherwise keep original url
-   */
+
   useEffect(() => {
     const prepare = async () => {
       const updated: Record<string, string> = {};
@@ -118,20 +109,20 @@ export function QuestionEditor({
     );
   };
 
-  // 🔥 CRITICAL FIX: Ensure updateQ only updates the specific question
+  // Ensure updateQ only updates the specific question
   const updateQ = (id: string, patch: Partial<EnhancedQuestion>) => {
-    console.log('🔥 updateQ called for question:', id, 'with patch:', patch);
+    console.log('updateQ called for question:', id, 'with patch:', patch);
     
     const next = questions.map(q => {
       if (q.id === id) {
         const updated = { ...q, ...patch };
-        console.log('🔥 Updating question:', id, 'from:', q, 'to:', updated);
+        console.log('Updating question:', id, 'from:', q, 'to:', updated);
         return updated;
       }
-      return q; // 🔥 CRITICAL: Return unchanged question for all others
+      return q; // zwrazanie reszty
     });
     
-    console.log('🔥 Final questions array:', next);
+    console.log('Final questions array:', next);
     onQuestionsChange(next); 
     pushToWindow(next);
   };
@@ -149,19 +140,19 @@ export function QuestionEditor({
     setDisplayUrls(prev => { const { [qid]: __, ...rest } = prev; return rest; });
   };
 
-  // 🔥 FIXED: Enhanced single question enhancement - only update the specific question
+  // single question enhancement
   const enhanceQuestion = async (questionIndex: number) => {
     const q = questions[questionIndex];
     if (!q?.correctAnswer || !q.id) return;
 
-    console.log(`🔥 Starting enhancement for question ${questionIndex + 1}: ${q.correctAnswer}`);
-    console.log('🔥 Question before enhancement:', q);
+    console.log(`Starting enhancement for question ${questionIndex + 1}: ${q.correctAnswer}`);
+    console.log('Question before enhancement:', q);
     
     setIsAnyEnhancing(true);
     setCurrentEnhancingIndex(questionIndex);
 
     try {
-      const res = await fetch('http://localhost:3001/api/enhance', {
+      const res = await fetch(`${backendUrl}/api/enhance`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -173,9 +164,9 @@ export function QuestionEditor({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       
-      console.log('🔥 Enhancement response for question', questionIndex + 1, ':', data);
+      console.log('Enhancement response for question', questionIndex + 1, ':', data);
       
-      // 🔥 CRITICAL FIX: Only update the SPECIFIC question being enhanced
+      // update pytań
       const enhancementPatch = {
         fakeAnswers: data.fakeAnswers ?? [],
         mediaUrl: data.mediaUrl ?? '',
@@ -184,7 +175,7 @@ export function QuestionEditor({
         wasEnhanced: true
       } as Partial<EnhancedQuestion>;
       
-      console.log('🔥 Applying enhancement patch to question:', q.id, enhancementPatch);
+      console.log('Applying enhancement patch to question:', q.id, enhancementPatch);
       updateQ(q.id, enhancementPatch);
 
       console.log(`✅ Enhanced question ${questionIndex + 1} successfully`);
@@ -196,7 +187,7 @@ export function QuestionEditor({
     }
   };
 
-  // 🔥 Sequential enhancement system
+  // Sequential enhancement system
   const startSequentialEnhancement = () => {
     const unenhancedQuestions = questions
       .map((q, index) => ({ question: q, index }))
@@ -224,7 +215,7 @@ export function QuestionEditor({
     setIsAnyEnhancing(false);
   };
 
-  // 🔥 Process enhancement queue
+  // kolejka enhancement
   useEffect(() => {
     const processQueue = async () => {
       if (!isSequentialMode || enhancementQueue.length === 0 || isAnyEnhancing) {
@@ -240,14 +231,14 @@ export function QuestionEditor({
       
       await enhanceQuestion(nextIndex);
       
-      // Remove processed question from queue
+      // usuwanie zrobionych z kolejki 
       setEnhancementQueue(prev => prev.slice(1));
     };
 
     processQueue();
   }, [isSequentialMode, enhancementQueue, isAnyEnhancing]);
 
-  // 🔥 Calculate enhancement progress
+  //  enhancement progressbar
   const totalQuestions = questions.filter(q => q.correctAnswer).length;
   const enhancedQuestions = questions.filter(q => q.wasEnhanced).length;
   const enhancementProgress = totalQuestions > 0 ? (enhancedQuestions / totalQuestions) * 100 : 0;
@@ -283,26 +274,7 @@ export function QuestionEditor({
           Adjust answers and attach media. Use sequential enhancement to process all questions automatically.
         </CardDescription>
 
-        {/* Answer Style Selector */}
-        <div className="mt-4 p-4 bg-muted/30 rounded-lg border">
-          <div className="flex items-center justify-between mb-3">
-            <Label className="text-sm font-medium">Answer Style</Label>
-            <Select value={labelStyle} onValueChange={onLabelStyleChange}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="abc">A, B, C, D... (Letters)</SelectItem>
-                <SelectItem value="123">1, 2, 3, 4... (Numbers)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Preview: {labelStyle === 'abc' ? 'A' : '1'}. Sample • {labelStyle === 'abc' ? 'B' : '2'}. Sample • {labelStyle === 'abc' ? 'C' : '3'}. Sample ✅
-          </div>
-        </div>
-
-        {/* 🔥 Sequential Enhancement Controls */}
+        {/* Sequential Enhancement Controls */}
         <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-violet-50 dark:from-blue-900/20 dark:to-violet-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -451,7 +423,7 @@ export function QuestionEditor({
                     </Select>
                   </Block>
 
-                  {/* 🔥 FIXED: Individual Enhancement Button - Allow re-enhancement when no other enhancement is running */}
+                  {/* Indywidualny Enhancement Button -  re-enhancement dostępny tylko wtedy kiedy żaden inny nie ma enhance */}
                   <Button variant="outline"
                     disabled={isAnyEnhancing}
                     onClick={() => enhanceQuestion(idxQ)}
@@ -552,11 +524,36 @@ export function QuestionEditor({
                       ))}
                     </div>
                   </Block>
-                </div>
-              </div>
+                </div>  
+              </div> 
             </div>
+            
           );
         })}
+                <div className="p-4 bg-muted/30 rounded-lg border">
+          <h3 className="text-lg font-semibold text-foreground mb-3">Answer Style</h3>
+          <div className="space-y-3">
+            <Label htmlFor="labelStyle">Option labels</Label>
+            <Select value={labelStyle} onValueChange={(value: 'abc' | '123') => onLabelStyleChange(value)}>
+              <SelectTrigger id="labelStyle">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="abc">A, B, C, D... (Letters)</SelectItem>
+                <SelectItem value="123">1, 2, 3, 4... (Numbers)</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+              <div className="text-sm font-medium mb-2">Preview:</div>
+              <div className="space-y-1 text-sm">
+                <div>{labelStyle === 'abc' ? 'A' : '1'}. Elon Musk</div>
+                <div>{labelStyle === 'abc' ? 'B' : '2'}. Taylor Swift</div>
+                <div>{labelStyle === 'abc' ? 'C' : '3'}. Serena Williams ✅</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

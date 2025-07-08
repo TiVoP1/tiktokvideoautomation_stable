@@ -58,7 +58,7 @@ export const CaptionedVideo: React.FC<{
     .replace(/.mov$/, ".json")
     .replace(/.webm$/, ".json");
 
-  // 🔥 NA PEWNO ZAŁADUJ CZCIONKĘ
+  // NA PEWNO ZAŁADUJ CZCIONKĘ
   useEffect(() => {
     loadFont();
   }, []);

@@ -1,5 +1,5 @@
 'use client';
-
+import { backendUrl } from './backend';
 import { useState, useEffect } from 'react';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle
@@ -73,7 +73,7 @@ export function TimingSettings({
   /* ---------- helpers ---------- */
   const est = (t:string) => Math.min(8, Math.max(1, +(t.length / 30).toFixed(1)));
 
-  // 🔥 CRITICAL: Calculate total extras time
+  // Calculate total extras time
   const totalExtraSeconds =
         est(extras.intro) +
         est(extras.outro) +
@@ -82,7 +82,7 @@ export function TimingSettings({
 
   /* ---------- SYNC ⇄ settings AND GLOBAL TIMING MANAGER ---------- */
   useEffect(() => {
-    console.log('🔥 TimingSettings: Updating global timing manager', {
+    console.log('TimingSettings: Updating global timing manager', {
       totalExtraSeconds,
       extras,
       ctaEnabled,
@@ -111,7 +111,7 @@ export function TimingSettings({
     });
   }, [extras, ctaEnabled, ctaAt, cutins, totalExtraSeconds]);
 
-  // Subscribe to timing manager updates
+  // timing manager update
   useEffect(() => {
     const unsubscribe = timingManager.subscribe(() => {
       forceUpdate({});
@@ -119,13 +119,12 @@ export function TimingSettings({
     return unsubscribe;
   }, []);
 
-  /* ---------- time calc with ENHANCED LOGGING ---------- */
   const pureQuestion =
       (settings.questionDuration ?? DEFAULT_Q) +
       ANSWER_TIME +
       (settings.resultDuration   ?? DEFAULT_R);
   
-  // 🔥 CRITICAL FIX: Use the new timing manager calculation
+  // nowy timing manager
   const duration = calculateTotalDuration(
     settings.questionDuration ?? DEFAULT_Q,
     settings.answerDuration ?? ANSWER_TIME,
@@ -134,7 +133,7 @@ export function TimingSettings({
     totalExtraSeconds
   );
 
-  /* ---------- helpers: cut-ins ---------- */
+  /*  helpery: cut-iny */
   const freeSlots = () => {
     const used = new Set<number>([
       ...(ctaEnabled ? [ctaAt] : []),
@@ -160,7 +159,7 @@ export function TimingSettings({
     setCutins(list);
   };
 
-  /* ---------- AI timing ---------- */
+  /*  AI timing */
   const handleGenerateAI = async () => {
     setAiLoading(true);
 
@@ -177,7 +176,7 @@ export function TimingSettings({
     };
 
     try {
-      const res = await fetch('http://localhost:3001/api/timing', {
+      const res = await fetch(`${backendUrl}/api/timing`, {
         method :'POST',
         headers:{ 'Content-Type':'application/json' },
         body   : JSON.stringify(payload)
@@ -318,7 +317,7 @@ export function TimingSettings({
   );
 }
 
-/* ─────────── mini-components ─────────── */
+/*  mini-komponenty */
 function TimeSlider({label,value,onChange,min=0.5,max=8,step=0.5}:{
   label:string;value:number;onChange:(n:number)=>void;min?:number;max?:number;step?:number;
 }){

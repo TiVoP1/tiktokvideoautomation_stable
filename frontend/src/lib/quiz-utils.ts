@@ -1,6 +1,6 @@
 import { QuizQuestion, QuizProject, QuizSettings } from '@/types/quiz';
 
-/* ───────────── Helpers do quizu ───────────── */
+/* Helpery do quizu */
 
 export const generateQuestionId = (): string =>
   `q_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

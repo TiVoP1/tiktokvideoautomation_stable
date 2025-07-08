@@ -1,5 +1,3 @@
-/* ────────── Quiz types ────────── */
-
 /* ––– pojedynczy cut-in (timingi) ––– */
 export interface CutIn {
   after_question: number;   // po którym pytaniu
@@ -27,10 +25,9 @@ export interface QuizSettings {
 
   /* tło + muzyka */
   backgroundImage?: string;      // może być także wideo
-  bgVideoStartOffset?: number;   // ⬅️  NOWE  (sekundy)
+  bgVideoStartOffset?: number;   
   backgroundMusic?: string;
-  musicStartOffset?: number;     // ⬅️  NOWE  (sekundy)
-
+  musicStartOffset?: number;   
   brandingText?: string;
 
   /* 2. czasy ekranów */

@@ -10,7 +10,7 @@ function App() {
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    // Default to dark mode if no saved preference
+    // domyślnie dark mode
     setIsDark(savedTheme === 'light' ? false : true);
   }, []);
 

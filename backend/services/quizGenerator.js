@@ -53,6 +53,9 @@ Return only the topic string. No explanations, no quotation marks.`,
 
 //correct answers
 export async function generateQuestionsFromTopic(inputTopic, count = 5) {
+  const MAX_ALLOWED = 20;
+  count = Math.min(count, MAX_ALLOWED); 
+
   if (!inputTopic) throw new Error("Topic is required for generating questions.");
 
   const refinedTopic = await refineTopic(inputTopic);

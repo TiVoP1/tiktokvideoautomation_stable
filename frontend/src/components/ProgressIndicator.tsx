@@ -1,7 +1,7 @@
 import React from 'react';
 import { Check, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
+import { backendUrl } from './backend';
 interface Step {
   id: number;
   title: string;
@@ -27,8 +27,8 @@ export function ProgressIndicator({ steps, currentStep, onStepClick }: ProgressI
               <button
                 onClick={() => onStepClick(step.id)}
                 disabled={
-                  (step.id === 1 && step.completed) || // Can't go back to step 1
-                  (step.id > maxCompletedStep + 1) // Can't skip ahead
+                  (step.id === 1 && step.completed) || // Step 1 nie da się iśc w tył, bo rozwala logike
+                  (step.id > maxCompletedStep + 1) // brak skip ahead
                 }
                 className={cn(
                   "step-indicator transition-all duration-300 hover:scale-105 disabled:hover:scale-100",

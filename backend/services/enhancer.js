@@ -1,83 +1,85 @@
+import { createHash } from 'crypto';
+import fs from 'fs/promises';
+import path from 'path';
+import fetch from 'node-fetch';
+import sharp from 'sharp';
 import OpenAI from 'openai';
 import axios from 'axios';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const openai = new OpenAI({
-  apiKey: process.env.GPT_API
-});
+/**
+ * ENV
+ */
+const openai = new OpenAI({ apiKey: process.env.GPT_API });
+const DOG_KEY = process.env.SCRAPINGDOG_API_KEY;
+const SHOTS_DIR = path.resolve('public/images');
+const BASE_IMAGE_URL = process.env.PUBLIC_IMAGE_URL || 'https://videogenerator.pl/api/images';
+const BLANK_MARK = `${BASE_IMAGE_URL}/blank.jpg`;
 
-const SCRAPINGDOG_API_KEY = process.env.SCRAPINGDOG_API_KEY;
+const FORBIDDEN = ['watermark','text','quote','gif','4k','funny','lobes','sinus'];
 
-//'meme' usuniete bo quiz może być o memach, trzeba bedzie dorobić soft forbidden
-const FORBIDDEN_WORDS = [
-  'watermark', 'text', 'quote', 'gif', '4k', 'funny', 'lobes', 'sinus'
-];
+/**
+ * HELPERY
+ */
+async function dl(url) {
+  const r = await fetch(url, { headers: { Referer: 'https://www.google.com' } });
+  if (!r.ok) throw new Error('DL fail');
+  return Buffer.from(await r.arrayBuffer());
+}
 
+async function crop16x9(buf) {
+  const base = await sharp(buf).resize({ height: 720, withoutEnlargement: true }).toBuffer();
+  const meta = await sharp(base).metadata();
+  const ratio = meta.width / meta.height;
+  const target = 16 / 9;
+  if (Math.abs(ratio - target) <= target * 0.1)
+    return sharp(base).jpeg({ quality: 90 }).toBuffer();
+  return sharp(base)
+    .resize({ width: 1280, height: 720, fit: 'cover', position: sharp.strategy.attention })
+    .jpeg({ quality: 90 }).toBuffer();
+}
 
-async function fetchBestImagesFromScrapingDog(query, count = 10) {
-  const url = "https://api.scrapingdog.com/google_images";
-  const params = {
-    api_key: SCRAPINGDOG_API_KEY,
-    query,
-    results: count,
-    country: "us",
-    page: 0
-  };
-
+async function saveLocal(url) {
+  if (!url || url.startsWith(BASE_IMAGE_URL)) return url;
+  await fs.mkdir(SHOTS_DIR, { recursive: true });
+  const file = `${createHash('md5').update(url).digest('hex')}.jpg`;
+  const dest = path.join(SHOTS_DIR, file);
+  const pub = `${BASE_IMAGE_URL}/${file}`;
   try {
-    const response = await axios.get(url, { params });
-    const images = response.data.images_results || [];
+    const raw = await dl(url);
+    const jpg = await crop16x9(raw);
+    await fs.writeFile(dest, jpg);
+    return pub;
+  } catch {
+    return BLANK_MARK;
+  }
+}
 
-    if (images.length === 0) {
-      console.warn("⚠️ ScrapingDog returned 0 images.");
-      return [];
-    }
+function hitAny(txt, arr) {
+  return arr.some(w => txt.includes(w));
+}
 
-    const preferredRatio = 16 / 9;
-    const tolerance = 0.2;
-
-    const filtered = images
-      .map(img => {
-        const errors = [];
-        if (!img.original_width || !img.original_height) errors.push("Missing dimensions");
-        if (!img.original) errors.push("Missing URL");
-
-        const title = img.title?.toLowerCase() || "";
-        const url = img.original?.toLowerCase() || "";
-        if (FORBIDDEN_WORDS.some(word => title.includes(word) || url.includes(word))) {
-          errors.push("Contains forbidden word");
-        }
-
-        const ratio = img.original_width / img.original_height;
-        const delta = Math.abs(ratio - preferredRatio);
-        const penalizedDelta = delta > tolerance ? delta * 5 : delta;
-
-        return errors.length === 0 ? {
-          url: img.original,
-          title: img.title || "No title",
-          ratio,
-          delta: penalizedDelta
-        } : null;
-      })
-      .filter(Boolean)
-      .sort((a, b) => a.delta - b.delta)
-      .slice(0, Math.min(count, 5));
-
-    if (filtered.length === 0) {
-      console.warn("⚠️ All images were filtered out. Try relaxing filters or using a different query.");
-    }
-
-    return filtered;
-  } catch (err) {
-    console.error("❌ ScrapingDog failed:", err?.response?.data?.message || err.message);
+async function fetchCandidates(query) {
+  const params = { api_key: DOG_KEY, query, results: 25, country: 'us', page: 0 };
+  try {
+    const { data } = await axios.get('https://api.scrapingdog.com/google_images', { params });
+    const items = data.images_results || [];
+    return items.map(r => {
+      if (!(r.original && r.original_width && r.original_height)) return null;
+      const txt = `${r.title} ${r.original}`.toLowerCase();
+      if (hitAny(txt, FORBIDDEN)) return null;
+      return { url: r.original, title: r.title || 'No title' };
+    }).filter(Boolean).slice(0, 10);
+  } catch {
     return [];
   }
 }
 
-
-
+/**
+ * główna funkcja
+ */
 export async function enhanceQuestion(topic, correctAnswer) {
   console.log("📚 Enhance topic:", topic);
 
@@ -108,9 +110,10 @@ Return ONLY valid JSON:
 }
 `;
 
-  let fakeData;
+  let fakes = [], searchPrompt = correctAnswer;
+
   try {
-    const response = await openai.chat.completions.create({
+    const { choices } = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         { role: "system", content: "You generate quiz data. Output only valid JSON." },
@@ -119,80 +122,55 @@ Return ONLY valid JSON:
       temperature: 0.5
     });
 
-    const text = response.choices[0].message.content;
+    const text = choices[0].message.content;
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
 
-    if (!Array.isArray(parsed.fakes)) {
-      parsed.fakes = Object.values(parsed.fakes);
-    }
-
-    fakeData = parsed;
+    fakes = Array.isArray(parsed.fakes) ? parsed.fakes : Object.values(parsed.fakes);
+    searchPrompt = parsed.searchPrompt?.trim() || searchPrompt;
   } catch (err) {
     console.error("❌ GPT JSON parse failed:", err.message);
     throw new Error("Invalid GPT output");
   }
 
-  const fakes = fakeData.fakes || [];
-  const searchPrompt = fakeData.searchPrompt?.trim() || correctAnswer;
+  // Pobieramy kandydatów
+  const rawCandidates = await fetchCandidates(searchPrompt);
+  if (!rawCandidates.length) throw new Error('No image candidates');
 
-  const allAnswers = [...fakes, correctAnswer].sort(() => 0.5 - Math.random());
-  const correctPosition = allAnswers.indexOf(correctAnswer) + 1;
-
-  const imageMeta = await fetchBestImagesFromScrapingDog(searchPrompt, 10);
-  const imageUrls = imageMeta.map(img => img.url);
-
-  let mediaUrl = imageUrls[0];
-
-  if (imageMeta.length > 0) {
-    const visionPrompt = `
-You're selecting the best image for a TikTok quiz.
-
-Topic: "${topic}"
-Correct answer: "${correctAnswer}"
-
-Select the best among all image titles:
-- Visually aesthetic, cinematic
-- No text, watermark, logos
-- Do NOT make the answer too obvious
-- Choose only a single, clear photo of one object (e.g. one leaf)
-- Reject diagrams, labeled images, or those showing multiple examples
-- Avoid educational or scientific reference images if possible
-- No memes, quotes, or baby photos
-
-Respond ONLY with number 1–all of the photos numbers.
-YOU MUST PICK ONE!
-
-${imageMeta.map((img, i) => `${i + 1}. ${img.title}`).join("\n")}
-`;
-
-    try {
-      const visionResponse = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: "Pick best quiz image from 5 shown. Respond with number 1–5 only." },
-          { role: "user", content: visionPrompt }
-        ],
-        temperature: 0.2
-      });
-
-      const answer = visionResponse.choices[0].message.content;
-      const match = answer.match(/[1-5]/);
-      const chosenIndex = match ? parseInt(match[0], 10) - 1 : 0;
-
-      mediaUrl = imageUrls[chosenIndex];
-      console.log("✅ GPT Vision selected image:", imageMeta[chosenIndex].title);
-    } catch (err) {
-      console.error("⚠️ GPT Vision failed, using first image.");
+  // Zapisujemy lokalnie i tworzymy listę tych które nie są BLANK
+  const localImages = [];
+  for (const c of rawCandidates) {
+    const localUrl = await saveLocal(c.url);
+    if (localUrl !== BLANK_MARK) {
+      localImages.push({ title: c.title, url: localUrl });
     }
-  } else {
-    console.warn("⚠️ No valid images after filtering.");
+    if (localImages.length >= 5) break;
   }
 
+  if (!localImages.length) throw new Error('All images blank');
+
+  // Losujemy jeden z nie-blankowych
+  const chosenIndex = Math.floor(Math.random() * localImages.length);
+  const mediaUrl = localImages[chosenIndex].url;
+
+  // Usuwamy pozostałe
+  for (const { url } of localImages) {
+    if (url !== mediaUrl) {
+      const filename = url.split('/').pop();
+      const filePath = path.join(SHOTS_DIR, filename);
+      try {
+        await fs.unlink(filePath);
+      } catch (err) {
+        console.warn(`⚠️ Could not delete unused image ${filename}: ${err.message}`);
+      }
+    }
+  }
+
+  const allAnswers = [...fakes, correctAnswer].sort(() => 0.5 - Math.random());
   return {
     correctAnswer,
     fakeAnswers: allAnswers.filter(a => a !== correctAnswer),
-    correctPosition,
+    correctPosition: allAnswers.indexOf(correctAnswer) + 1,
     mediaType: "image",
     mediaUrl
   };

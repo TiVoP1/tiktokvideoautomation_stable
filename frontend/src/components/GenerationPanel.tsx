@@ -1,5 +1,5 @@
 'use client';
-
+import { backendUrl } from './backend';
 import { useState, useEffect, useRef } from 'react';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle
@@ -29,7 +29,7 @@ interface Props {
 }
 
 export function GenerationPanel({ quiz, onGenerate }: Props) {
-  // 🔥 CRITICAL FIX: Use the EXACT same calculation as TimingSettings via global timing manager
+  // z timingSettings (global)
   const [, forceUpdate] = useState({});
   
   // Subscribe to timing manager updates
@@ -40,18 +40,17 @@ export function GenerationPanel({ quiz, onGenerate }: Props) {
     return unsubscribe;
   }, []);
 
-  // Get timing from global manager with detailed logging
   const globalExtrasTime = timingManager.getExtrasTime();
   const settingsExtrasTime = quiz.settings.extrasSeconds ?? 0;
   
-  console.log('🔥 GenerationPanel timing comparison:', {
+  console.log(' GenerationPanel timing comparison:', {
     globalExtrasTime,
     settingsExtrasTime,
     usingGlobal: globalExtrasTime > 0 ? globalExtrasTime : settingsExtrasTime,
     timestamp: new Date().toISOString()
   });
 
-  // Use global timing manager value if available, otherwise fall back to settings
+  // global timing manager
   const extrasToUse = globalExtrasTime > 0 ? globalExtrasTime : settingsExtrasTime;
   
   const duration = calculateTotalDuration(
@@ -74,7 +73,7 @@ export function GenerationPanel({ quiz, onGenerate }: Props) {
     quiz.questions.every(q => q.correctAnswer && q.fakeAnswers.length);
 
   const handleGenerate = async () => {
-    console.log('🔥 GenerationPanel.handleGenerate: Starting generation with timing:', {
+    console.log('GenerationPanel.handleGenerate: Starting generation with timing:', {
       duration,
       extrasToUse,
       globalExtrasTime,
@@ -93,7 +92,7 @@ export function GenerationPanel({ quiz, onGenerate }: Props) {
           const formData = new FormData();
           formData.append('file', blob, `media-${Date.now()}.${ext}`);
 
-          const uploadRes = await fetch('http://localhost:3001/api/upload', {
+          const uploadRes = await fetch(`${backendUrl}/api/upload`, {
             method: 'POST',
             body: formData
           });
@@ -118,7 +117,7 @@ export function GenerationPanel({ quiz, onGenerate }: Props) {
           const formData = new FormData();
           formData.append('file', blob, `${key}-${Date.now()}.${ext}`);
 
-          const uploadRes = await fetch('http://localhost:3001/api/upload', {
+          const uploadRes = await fetch(`${backendUrl}/api/upload`, {
             method: 'POST',
             body: formData
           });
@@ -142,7 +141,7 @@ export function GenerationPanel({ quiz, onGenerate }: Props) {
     };
 
     try {
-      const res = await fetch('http://localhost:3001/api/generate', {
+      const res = await fetch(`${backendUrl}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -159,11 +158,18 @@ export function GenerationPanel({ quiz, onGenerate }: Props) {
   const pollProgress = (jobId: string) => {
     pollingRef.current = setInterval(async () => {
       try {
-        const res = await fetch('http://localhost:3001/api/generate/progress', {
+        const res = await fetch(`${backendUrl}/api/generate/progress`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ jobId })
         });
+
+        const contentType = res.headers.get('content-type') || '';
+
+        if (!res.ok || !contentType.includes('application/json')) {
+          const text = await res.text();
+          throw new Error(`Invalid response: ${res.status} ${text.slice(0, 100)}...`);
+        }
 
         const data: GenerationStatus = await res.json();
         setStatus(data);
@@ -174,13 +180,19 @@ export function GenerationPanel({ quiz, onGenerate }: Props) {
         } else if (data.status === 'error') {
           clearInterval(pollingRef.current!);
         }
+
       } catch (err) {
         console.error('Polling error:', err);
         clearInterval(pollingRef.current!);
-        setStatus({ status: 'error', progress: 0, message: 'Polling failed' });
+        setStatus({
+          status: 'error',
+          progress: 0,
+          message: 'Polling failed – video may still be rendering, please refresh later.'
+        });
       }
     }, 1000);
   };
+
 
   useEffect(() => {
     return () => {

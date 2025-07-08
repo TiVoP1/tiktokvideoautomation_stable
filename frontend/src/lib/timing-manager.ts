@@ -1,4 +1,4 @@
-// Global timing manager to ensure consistent calculations across components
+// Global timing manager
 class TimingManager {
   private static instance: TimingManager;
   private extrasTime: number = 0;
@@ -13,9 +13,9 @@ class TimingManager {
     return TimingManager.instance;
   }
 
-  // Set the global extras time and notify all listeners
+  // ustawienie globalnych extras i powiadomioenie listenerów
   setExtrasTime(seconds: number): void {
-    console.log('🔥 TimingManager.setExtrasTime:', {
+    console.log('TimingManager.setExtrasTime:', {
       oldValue: this.extrasTime,
       newValue: seconds,
       timestamp: new Date().toISOString()
@@ -25,16 +25,16 @@ class TimingManager {
     this.notifyListeners();
   }
 
-  // Get the current extras time
+  // extras time
   getExtrasTime(): number {
-    console.log('🔥 TimingManager.getExtrasTime:', {
+    console.log('TimingManager.getExtrasTime:', {
       value: this.extrasTime,
       timestamp: new Date().toISOString()
     });
     return this.extrasTime;
   }
 
-  // Subscribe to timing changes
+  // timing changes
   subscribe(callback: () => void): () => void {
     this.listeners.add(callback);
     return () => this.listeners.delete(callback);
@@ -44,9 +44,9 @@ class TimingManager {
     this.listeners.forEach(callback => callback());
   }
 
-  // Debug method to log current state
+  // Debug
   debug(): void {
-    console.log('🔥 TimingManager DEBUG:', {
+    console.log('TimingManager DEBUG:', {
       extrasTime: this.extrasTime,
       listenersCount: this.listeners.size,
       timestamp: new Date().toISOString()
@@ -56,7 +56,7 @@ class TimingManager {
 
 export const timingManager = TimingManager.getInstance();
 
-// Enhanced calculation function with detailed logging
+// POPRAWIONA funkcja kalkulacji czasu, ogarnia już extras
 export function calculateTotalDuration(
   questionDuration: number,
   answerDuration: number,
@@ -81,7 +81,7 @@ export function calculateTotalDuration(
     formattedTime: formatDuration(total)
   };
 
-  console.log('🔥 calculateTotalDuration:', {
+  console.log('calculateTotalDuration:', {
     inputs: {
       questionDuration,
       answerDuration,

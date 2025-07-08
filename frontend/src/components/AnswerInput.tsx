@@ -1,5 +1,5 @@
 'use client';
-
+import { backendUrl } from './backend';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -56,15 +56,15 @@ export function AnswerInput({ onAnswersGenerated, isLoading = false }: AnswerInp
     try {
       setIsGenerated(true);
 
-      // 🔹 1. Jeśli AI ma wybrać temat
+      // 1 Jeśli AI ma wybrać temat
       if (autoTopic) {
-        const topicRes = await fetch('http://localhost:3001/api/topic', { method: 'POST' });
+        const topicRes = await fetch(`${backendUrl}/api/topic`, { method: 'POST' });
         const topicData = await topicRes.json();
         finalTopic = topicData.topic;
-        setTopic(finalTopic); // 🔥 zaktualizuj input widoczny w UI
+        setTopic(finalTopic); 
       }
 
-      // 🔹 2. Jeśli użytkownik ręcznie wpisał odpowiedzi
+      //  2. Jeśli użytkownik ręcznie wpisał odpowiedzi
       if (!autoAnswers) {
         const quizData: QuizProject = {
           title: finalTopic,
@@ -78,7 +78,7 @@ export function AnswerInput({ onAnswersGenerated, isLoading = false }: AnswerInp
             topic: finalTopic
           })),
           settings: {
-            labelStyle: labelStyle, // 🔥 Use selected label style
+            labelStyle: labelStyle, 
             theme: 'modern',
             videoFormat: '16:9',
             questionDuration: 4,
@@ -91,8 +91,8 @@ export function AnswerInput({ onAnswersGenerated, isLoading = false }: AnswerInp
         return;
       }
 
-      // 🔹 3. Jeśli AI generuje pytania
-      const questionsRes = await fetch('http://localhost:3001/api/questions', {
+      // 3 Jeśli AI generuje pytania
+      const questionsRes = await fetch(`${backendUrl}/api/questions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topic: finalTopic, count: countToSend }),
@@ -141,36 +141,11 @@ export function AnswerInput({ onAnswersGenerated, isLoading = false }: AnswerInp
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Answer Style Selection */}
-        <div className="p-4 bg-muted/30 rounded-lg border">
-          <h3 className="text-lg font-semibold text-foreground mb-3">Answer Style</h3>
-          <div className="space-y-3">
-            <Label htmlFor="labelStyle">Option labels</Label>
-            <Select value={labelStyle} onValueChange={(value: 'abc' | '123') => setLabelStyle(value)}>
-              <SelectTrigger id="labelStyle">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="abc">A, B, C, D... (Letters)</SelectItem>
-                <SelectItem value="123">1, 2, 3, 4... (Numbers)</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <div className="mt-3 p-3 bg-muted/50 rounded-lg">
-              <div className="text-sm font-medium mb-2">Preview:</div>
-              <div className="space-y-1 text-sm">
-                <div>{labelStyle === 'abc' ? 'A' : '1'}. Sample answer 1</div>
-                <div>{labelStyle === 'abc' ? 'B' : '2'}. Sample answer 2</div>
-                <div>{labelStyle === 'abc' ? 'C' : '3'}. Sample answer 3 ✅</div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Topic automation */}
         <div className="flex items-center justify-between">
           <Label htmlFor="autoTopic" className="text-sm text-muted-foreground flex items-center gap-1">
-            Let AI choose the topic
+            Let AI choose the topic <span className="text-xs text-red-500">(not recommended)</span>
             {autoTopic && <Sparkles className="w-4 h-4 text-purple-500" />}
           </Label>
           <Switch

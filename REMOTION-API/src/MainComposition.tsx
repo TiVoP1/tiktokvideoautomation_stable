@@ -19,7 +19,7 @@ import themes from './constants/themes';
 const fps = 30;
 const TIMER_AUDIO_URL = 'http://localhost:3001/assets/timer.mp3';
 const OVERLAP_FR = 1 * fps; 
-const EARLY_FADE_FR = 0.5 * fps; // fade‑out window inside Question
+const EARLY_FADE_FR = 0.5 * fps; // fade‑out inside Question
 
 type SceneT = 'intro' | 'question' | 'cta' | 'cutin' | 'summary' | 'outro';
 
@@ -52,42 +52,78 @@ export const MainComposition = ({ data }: { data: any }) => {
   let prevScene: SceneT = 'intro';
 
   //helpers
-  const renderCaptions = (raw: { text: string; start: number; end: number }[], id: string) => {
-    const tokens = raw.map((c) => ({ text: c.text, fromMs: c.start * 1000, toMs: c.end * 1000 }));
-    const pages: { startMs: number; tokens: typeof tokens }[] = [];
-    for (let i = 0; i < tokens.length; i += 3) pages.push({ startMs: tokens[i].fromMs, tokens: tokens.slice(i, i + 3) });
+const renderCaptions = (
+  raw: { text: string; start: number; end: number }[],
+  id: string
+) => {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    console.warn(`⚠️ Empty or invalid caption data for: ${id}`);
+    return null;
+  }
 
-    return pages.map((p, idx) => {
-      const next = pages[idx + 1];
-      const sF = Math.floor((p.startMs / 1000) * fps);
-      const lastEnd = p.tokens[p.tokens.length - 1].toMs;
-      const eF = next ? Math.floor((next.startMs / 1000) * fps) - 2 : Math.ceil((lastEnd / 1000) * fps);
-      if (!Number.isFinite(sF) || !Number.isFinite(eF - sF)) return null;
-      return (
-        <Sequence key={`${id}-${idx}`} from={sF} durationInFrames={eF - sF}>
-          <SubtitlePage
-            page={{
-              startMs: p.startMs,
-              text: p.tokens.map((t) => t.text).join(' '),
-              tokens: p.tokens,
-              durationMs: lastEnd - p.startMs,
-            }}
-          />
-        </Sequence>
+  const tokens = raw.map((c) => ({
+    text: c.text,
+    fromMs: c.start * 1000,
+    toMs: c.end * 1000,
+  }));
+
+  const pages: { startMs: number; tokens: typeof tokens }[] = [];
+  for (let i = 0; i < tokens.length; i += 3) {
+    pages.push({ startMs: tokens[i].fromMs, tokens: tokens.slice(i, i + 3) });
+  }
+
+  return pages.map((p, idx) => {
+    const nextPage = pages[idx + 1];
+    const sF = Number.isFinite(p.startMs)
+      ? Math.floor((p.startMs / 1000) * fps)
+      : 0;
+
+    const lastEnd = p.tokens[p.tokens.length - 1]?.toMs ?? p.startMs + 1000;
+    const eF = nextPage && Number.isFinite(nextPage.startMs)
+      ? Math.floor((nextPage.startMs / 1000) * fps) - 2
+      : Math.ceil((lastEnd / 1000) * fps);
+
+    const duration = eF - sF;
+
+    if (!Number.isFinite(sF) || !Number.isFinite(duration) || duration <= 0) {
+      console.warn(
+        `⚠️ Invalid subtitle sequence skipped: sF=${sF}, eF=${eF}, duration=${duration}`
       );
-    });
-  };
+      return null;
+    }
+
+    return (
+      <Sequence key={`${id}-${idx}`} from={sF} durationInFrames={duration}>
+        <SubtitlePage
+          page={{
+            startMs: p.startMs,
+            text: p.tokens.map((t) => t.text).join(" "),
+            tokens: p.tokens,
+            durationMs: lastEnd - p.startMs,
+          }}
+        />
+      </Sequence>
+    );
+  });
+};
+
 
   // Intro
-  const introF = intro_duration * fps;
+const introF = (Number(intro_duration) || 0) * fps;
+
+if (!Number.isFinite(introF) || introF <= 0 || !Number.isFinite(currentFrame)) {
+  console.warn(`⚠️ Skipping intro: introF=${introF}, currentFrame=${currentFrame}`);
+} else {
   sequences.push(
     <Sequence key="intro" from={currentFrame} durationInFrames={introF}>
       <SafeAudio src={intro_audio} />
-      {intro_audio_captions && renderCaptions(intro_audio_captions, 'intro')}
-    </Sequence>,
+      {Array.isArray(intro_audio_captions) && renderCaptions(intro_audio_captions, 'intro')}
+    </Sequence>
   );
   currentFrame += introF;
   prevScene = 'intro';
+}
+
 
   // Questions
   questions.forEach((q: any, idx: number) => {
@@ -100,46 +136,57 @@ export const MainComposition = ({ data }: { data: any }) => {
     const qStartEarly = prevScene === 'intro' || prevScene === 'cta' || prevScene === 'cutin';
     const qStart = qStartEarly ? currentFrame - OVERLAP_FR : currentFrame;
 
-    sequences.push(
-      <Sequence key={`q-${id}`} from={qStart} durationInFrames={totalQF}>
-        <Sequence from={fps} durationInFrames={baseF}>
-          <SafeAudio src={TIMER_AUDIO_URL} loop volume={0.6} />
-        </Sequence>
-        {q.begin_audio && (
-          <Sequence from={fps} durationInFrames={3 * fps}>
-            <SafeAudio src={q.begin_audio} />
-          </Sequence>
-        )}
-        {q.end_audio && (
-          <Sequence from={fps + baseF} durationInFrames={revealF}>
-            <SafeAudio src={q.end_audio} />
-            {q.captions && renderCaptions(q.captions, `qcap-${id}`)}
-          </Sequence>
-        )}
+const isQStartValid = Number.isFinite(qStart);
+const isDurationValid = Number.isFinite(totalQF) && totalQF > 0;
 
-        <Fade
-          durationInFrames={totalQF}
-          fadeOutEarlyFrames={
-            table_duration > 0 && idx < questions.length - 1 && // not last Q
-            !(cta?.after_question === id) &&
-            !(cut_ins || []).some((c: any) => c.after_question === id)
-              ? EARLY_FADE_FR
-              : 0
-          }
-        >
-          <QuestionScene
-            imageUrl={q.shot}
-            options={q.options}
-            correctOption={q.correct_option}
-            durationInFrames={baseF}
-            preAnimationDuration={fps}
-            revealAnimationDuration={revealF}
-            textColor={theme.text}
-            labelStyle={label_style}
-          />
-        </Fade>
-      </Sequence>,
-    );
+if (!isQStartValid || !isDurationValid) {
+  console.warn(`⚠️ Skipping question #${id} due to invalid timing. qStart=${qStart}, totalQF=${totalQF}`);
+} else {
+  sequences.push(
+    <Sequence key={`q-${id}`} from={qStart} durationInFrames={totalQF}>
+      <Sequence from={fps} durationInFrames={baseF}>
+        <SafeAudio src={TIMER_AUDIO_URL} loop volume={0.6} />
+      </Sequence>
+
+      {q.begin_audio && (
+        <Sequence from={fps} durationInFrames={3 * fps}>
+          <SafeAudio src={q.begin_audio} />
+        </Sequence>
+      )}
+
+      {q.end_audio && (
+        <Sequence from={fps + baseF} durationInFrames={revealF}>
+          <SafeAudio src={q.end_audio} />
+          {Array.isArray(q.captions) && renderCaptions(q.captions, `qcap-${id}`)}
+        </Sequence>
+      )}
+
+      <Fade
+        durationInFrames={totalQF}
+        fadeOutEarlyFrames={
+          table_duration > 0 &&
+          idx < questions.length - 1 &&
+          !(cta?.after_question === id) &&
+          !(cut_ins || []).some((c: any) => c.after_question === id)
+            ? EARLY_FADE_FR
+            : 0
+        }
+      >
+        <QuestionScene
+          imageUrl={q.shot}
+          options={q.options}
+          correctOption={q.correct_option}
+          durationInFrames={baseF}
+          preAnimationDuration={fps}
+          revealAnimationDuration={revealF}
+          textColor={theme.text}
+          labelStyle={label_style}
+        />
+      </Fade>
+    </Sequence>
+  );
+}
+
 
     currentFrame += totalQF - (qStartEarly ? OVERLAP_FR : 0);
     prevScene = 'question';
@@ -147,68 +194,93 @@ export const MainComposition = ({ data }: { data: any }) => {
 
     // CTA brak initial overlapa
     const ctaHere = cta?.after_question === id;
-    if (ctaHere) {
-      const ctaF = cta.duration * fps;
-      sequences.push(
-        <Sequence key={`cta-${id}`} from={currentFrame} durationInFrames={ctaF}>
-          <SafeAudio src={cta.audio} />
-          {cta.captions && renderCaptions(cta.captions, `cta-${id}`)}
-          <Fade durationInFrames={ctaF}>
-            <CTABlock text={cta.text} />
-          </Fade>
-        </Sequence>,
-      );
-      currentFrame += ctaF;
-      prevScene = 'cta';
-    }
+if (ctaHere) {
+  const ctaF = (Number(cta?.duration) || 0) * fps;
+
+  if (!Number.isFinite(ctaF) || ctaF <= 0 || !Number.isFinite(currentFrame)) {
+    console.warn(`⚠️ Skipping CTA after Q${id}: ctaF=${ctaF}`);
+  } else {
+    sequences.push(
+      <Sequence key={`cta-${id}`} from={currentFrame} durationInFrames={ctaF}>
+        <SafeAudio src={cta.audio} />
+        {Array.isArray(cta.captions) && renderCaptions(cta.captions, `cta-${id}`)}
+        <Fade durationInFrames={ctaF}>
+          <CTABlock text={cta.text} />
+        </Fade>
+      </Sequence>
+    );
+    currentFrame += ctaF;
+    prevScene = 'cta';
+  }
+}
+
 
     // Cutny (brak overlap poczatek)
-    const cuts = (cut_ins || []).filter((c: any) => c.after_question === id);
-    cuts.forEach((cut: any, ci: number) => {
-      const cutF = cut.duration * fps;
-      sequences.push(
-        <Sequence key={`cut-${id}-${ci}`} from={currentFrame} durationInFrames={cutF}>
-          <SafeAudio src={cut.audio} />
-          {cut.captions && renderCaptions(cut.captions, `cut-${id}-${ci}`)}
-        </Sequence>,
-      );
-      currentFrame += cutF;
-      prevScene = 'cutin';
-    });
+const cuts = (cut_ins || []).filter((c: any) => c.after_question === id);
+cuts.forEach((cut: any, ci: number) => {
+  const cutF = (Number(cut?.duration) || 0) * fps;
+
+  if (!Number.isFinite(cutF) || cutF <= 0 || !Number.isFinite(currentFrame)) {
+    console.warn(
+      `⚠️ Skipping cut-in #${ci} after Q${id}: cutF=${cutF}, currentFrame=${currentFrame}`
+    );
+    return; // ⛔ zatrzymaj pętlę dla tego cuta
+  }
+
+  sequences.push(
+    <Sequence key={`cut-${id}-${ci}`} from={currentFrame} durationInFrames={cutF}>
+      <SafeAudio src={cut.audio} />
+      {Array.isArray(cut.captions) && renderCaptions(cut.captions, `cut-${id}-${ci}`)}
+    </Sequence>
+  );
+  currentFrame += cutF;
+  prevScene = 'cutin';
+});
+
 
     // teabele
-    const isLastQ = idx === questions.length - 1;
-    const showTable = !isLastQ && !ctaHere && cuts.length === 0 && table_duration > 0;
+const isLastQ = idx === questions.length - 1;
+const rawTableDuration = Number(table_duration) || 0;
+const showTable = !isLastQ && !ctaHere && cuts.length === 0 && rawTableDuration > 0;
 
-    if (showTable) {
-  
-      const tableF = table_duration * fps + OVERLAP_FR;
-      const tableStart = currentFrame - OVERLAP_FR;
+if (showTable) {
+  const tableF = rawTableDuration * fps + OVERLAP_FR;
+  const tableStart = currentFrame - OVERLAP_FR;
 
-      sequences.push(
-        <Sequence key={`table-${id}`} from={tableStart} durationInFrames={tableF}>
-          <Fade durationInFrames={tableF}>
-            <SummaryTable
-              answers={answers.slice(0, id)}
-              totalQuestions={questions.length}
-              theme={theme}
-            />
-          </Fade>
-        </Sequence>,
-      );
+  if (!Number.isFinite(tableF) || tableF <= 0 || !Number.isFinite(tableStart)) {
+    console.warn(
+      `⚠️ Skipping summary table after Q${id}: tableF=${tableF}, tableStart=${tableStart}`
+    );
+  } else {
+    sequences.push(
+      <Sequence key={`table-${id}`} from={tableStart} durationInFrames={tableF}>
+        <Fade durationInFrames={tableF}>
+          <SummaryTable
+            answers={answers.slice(0, id)}
+            totalQuestions={questions.length}
+            theme={theme}
+          />
+        </Fade>
+      </Sequence>
+    );
 
-      // Advance timeline exactly by the visible part of the table (without the earlier 1‑s overlap)
-      currentFrame += tableF - OVERLAP_FR;
-      prevScene = 'summary'; // prevents next Question from starting early
-    }
+    currentFrame += tableF - OVERLAP_FR;
+    prevScene = 'summary';
+  }
+}
+
   });
 
   // -------------------------------- Outro (full table overlay) -----------
-  const outroF = outro_duration * fps;
+const outroF = (Number(outro_duration) || 0) * fps;
+
+if (!Number.isFinite(outroF) || outroF <= 0 || !Number.isFinite(currentFrame)) {
+  console.warn(`⚠️ Skipping outro: outroF=${outroF}, currentFrame=${currentFrame}`);
+} else {
   sequences.push(
     <Sequence key="outro" from={currentFrame} durationInFrames={outroF}>
       <SafeAudio src={outro_audio} />
-      {outro_audio_captions && renderCaptions(outro_audio_captions, 'outro')}
+      {Array.isArray(outro_audio_captions) && renderCaptions(outro_audio_captions, 'outro')}
       <Fade durationInFrames={outroF}>
         <SummaryTable
           answers={answers}
@@ -216,8 +288,11 @@ export const MainComposition = ({ data }: { data: any }) => {
           theme={theme}
         />
       </Fade>
-    </Sequence>,
+    </Sequence>
   );
+  currentFrame += outroF;
+}
+
   currentFrame += outroF;
 
   //Render (muzyka XDD)

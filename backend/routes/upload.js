@@ -4,7 +4,7 @@ import path from 'path';
 
 const router = express.Router();
 
-// 🔧 Konfiguracja zapisu plików
+// Konfiguracja zapisu plików
 const storage = multer.diskStorage({
   destination: path.resolve('public/generated'),
   filename: (req, file, cb) => {
@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// 📤 POST /api/upload – przyjmuje jeden plik i zwraca publiczny URL
+// POST /api/upload – przyjmuje jeden plik i zwraca publiczny URL
 router.post('/', upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No file uploaded.' });

@@ -1,5 +1,5 @@
 'use client';
-
+import { backendUrl } from './backend';
 import { useState } from 'react';
 import { AnswerInput } from './AnswerInput';
 import { BrandingSettings } from './BrandingSettings';
@@ -14,11 +14,12 @@ export function QuizBuilder() {
   const [quiz, setQuiz] = useState<QuizProject | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const canContinueToBranding = quiz?.questions
+    .every(q => q.fakeAnswers.length > 0 && q.mediaUrl?.trim()) ?? false;
+
   
-  // Track which steps have been explicitly completed
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
 
-  // 🔥 CRITICAL FIX: Generate proper unique IDs for questions
   const generateQuestionId = (index: number): string => {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substr(2, 9);
@@ -28,13 +29,13 @@ export function QuizBuilder() {
   const handleQuizGenerated = (generated: any) => {
     setIsGenerating(true);
 
-    console.log('🔥 Raw generated data:', generated);
+    console.log('Raw generated data:', generated);
 
-    // 🔥 CRITICAL FIX: Ensure every question gets a proper unique ID
+    // unikalne ID questions
     const mappedQuestions: QuizQuestion[] = generated.questions.map((q: any, index: number) => {
       const questionId = generateQuestionId(index);
       
-      console.log(`🔥 Mapping question ${index}:`, {
+      console.log(`Mapping question ${index}:`, {
         originalId: q.question_id,
         newId: questionId,
         correctAnswer: q.correctAnswer ?? q.options?.[q.correct_option],
@@ -42,7 +43,7 @@ export function QuizBuilder() {
       });
 
       return {
-        id: questionId, // 🔥 ALWAYS use our generated ID
+        id: questionId, // use generated ID
         correctAnswer: q.correctAnswer ?? q.options?.[q.correct_option] ?? '',
         fakeAnswers: q.fakeAnswers ?? (q.options ? Object.entries(q.options)
           .filter(([key]) => key !== q.correct_option)
@@ -54,7 +55,7 @@ export function QuizBuilder() {
       };
     });
 
-    console.log('🔥 Final mapped questions with IDs:', mappedQuestions);
+    console.log('Final mapped questions with IDs:', mappedQuestions);
 
     const settings: QuizSettings = generated.settings || {
       theme: 'modern',
@@ -72,12 +73,12 @@ export function QuizBuilder() {
       settings,
     };
 
-    console.log('🔥 Final quiz project:', project);
+    console.log('Final quiz project:', project);
 
     setQuiz(project);
     setIsGenerating(false);
     
-    // Mark step 1 as completed and move to step 2
+    // step 1 -> step 2
     setCompletedSteps(new Set([1]));
     setCurrentStep(2);
   };
@@ -85,13 +86,13 @@ export function QuizBuilder() {
   const handleQuestionsUpdate = (updated: QuizQuestion[]) => {
     if (!quiz) return;
     
-    console.log('🔥 Updating questions in QuizBuilder:', updated);
+    console.log('Updating questions in QuizBuilder:', updated);
     
-    // 🔥 VALIDATION: Ensure all questions have valid IDs
+    // wszystkie questions musze mieć poprawene ID
     const validatedQuestions = updated.map((q, index) => {
       if (!q.id || q.id === 'undefined' || q.id.includes('undefined')) {
         const newId = generateQuestionId(index);
-        console.log(`🔥 FIXING invalid question ID: ${q.id} → ${newId}`);
+        console.log(`FIXING invalid question ID: ${q.id} → ${newId}`);
         return { ...q, id: newId };
       }
       return q;
@@ -106,12 +107,12 @@ export function QuizBuilder() {
   };
 
   const handleStepClick = (stepId: number) => {
-    // Step 1 cannot be navigated back to once completed
+    // nie da się iśc do step 1
     if (stepId === 1 && completedSteps.has(1)) {
       return;
     }
     
-    // Allow navigation to any completed step or the next available step
+    // nawigacja można każdy poprzedni (oprócz 1 [zasada wyżej]) i następny
     const maxCompletedStep = Math.max(...Array.from(completedSteps), 0);
     if (completedSteps.has(stepId) || stepId === currentStep || stepId <= maxCompletedStep + 1) {
       setCurrentStep(stepId);
@@ -122,7 +123,7 @@ export function QuizBuilder() {
     setCompletedSteps(prev => new Set([...prev, stepId]));
   };
 
-  // 🔥 MERGED STEPS: Removed Answer Style step, now only 5 steps total
+  // usunięte Answer style, zmergowany z step 2
   const steps = [
     { 
       id: 1, 
@@ -152,6 +153,7 @@ export function QuizBuilder() {
   ];
 
   const renderCurrentStep = () => {
+    //TAK WIEM DA SIĘ ZROBIĆ TO LEPIEJ, ale tak było szybciej
     switch (currentStep) {
       case 1:
         return (
@@ -174,14 +176,21 @@ export function QuizBuilder() {
             />
             <div className="mt-6 text-center">
               <button
+                disabled={!canContinueToBranding}
                 onClick={() => {
+                  if (!canContinueToBranding) return; 
                   markStepCompleted(2);
                   setCurrentStep(3);
                 }}
-                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-violet-600 text-white rounded-lg hover:from-blue-700 hover:to-violet-700 transition-all"
+                className={`px-6 py-2 rounded-lg transition-all ${
+                  canContinueToBranding
+                    ? 'bg-gradient-to-r from-blue-600 to-violet-600 text-white hover:from-blue-700 hover:to-violet-700'
+                    : 'bg-muted text-muted-foreground cursor-not-allowed'
+                }`}
               >
                 Continue to Branding →
               </button>
+
             </div>
           </div>
         ) : null;

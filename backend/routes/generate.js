@@ -58,15 +58,22 @@ router.post("/", async (req, res) => {
 /**
  * POST /api/progress
  * Body: { jobId } zwraca progress jobId
+ * XD
  */
 router.post("/progress", (req, res) => {
-  const { jobId } = req.body;
-  if (!jobId || !progressMap.has(jobId)) {
-    return res.status(404).json({ status: "error", progress: 0, message: "Invalid or unknown jobId" });
-  }
+  try {
+    const { jobId } = req.body;
+    if (!jobId || !progressMap.has(jobId)) {
+      return res.status(404).json({ status: "error", progress: 0, message: "Invalid or unknown jobId" });
+    }
 
-  const status = progressMap.get(jobId);
-  res.json(status);
+    const status = progressMap.get(jobId);
+    res.json(status);
+  } catch (err) {
+    console.error("❌ /progress error:", err);
+    res.status(500).json({ status: "error", progress: 0, message: "Internal server error" });
+  }
 });
+
 
 export default router;

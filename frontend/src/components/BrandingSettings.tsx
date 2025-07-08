@@ -5,12 +5,12 @@
  * ------------------------------------------------------------------------------------------
  * • Jeden uploader / URL dla tła – akceptuje obraz albo wideo.
  * • Kiedy to wideo → slider „Start at mm:ss”, zapisywany w bgVideoStartOffset.
- *   ⤷ Podgląd ustawia video.currentTime; nic nie tniemy.
+ *   -> Podgląd ustawia video.currentTime; nic nie tniemy.
  * • Audio: slider „Start at”, tylko zapis musicStartOffset; podgląd skacze przy play.
  * • Overlay (correct answer) ma z-index 10, <video> z-index 0 → nic się nie chowa.
  * • <video> ma object-cover i wypełnia 9×16.
  */
-
+import { backendUrl } from './backend';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle
@@ -51,7 +51,7 @@ export function BrandingSettings({
   question,
   onSettingsChange,
 }: BrandingSettingsProps) {
-  /* ---------- background media (image / video) ---------- */
+  /*  background media (image / video (video to do)) */
   const [bg, setBg] = useState<{
     url: string;
     type: 'image' | 'video';
@@ -70,16 +70,16 @@ export function BrandingSettings({
   const [vidDur, setVidDur] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  /* ---------- audio ---------- */
+  /* audio  */
   const [music, setMusic] = useState(settings.backgroundMusic || '');
   const [musOff, setMusOff] = useState(settings.musicStartOffset || 0);
   const [musDur, setMusDur] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  /* ---------- watermark ---------- */
+  /*  watermark  */
   const [brand, setBrand] = useState(settings.brandingText || '');
 
-  /* ---------- first question for preview ---------- */
+  /*  first question for preview */
   const [firstQ, setFirstQ] = useState<QuizQuestion | undefined>(question);
   useEffect(() => {
     const id = setInterval(() => {
@@ -89,7 +89,7 @@ export function BrandingSettings({
     return () => clearInterval(id);
   }, []);
 
-  /* ---------- media metadata ---------- */
+  /*  media metadata */
   useEffect(() => {
     if (bg?.type === 'video') {
       const v = document.createElement('video');
@@ -108,7 +108,7 @@ export function BrandingSettings({
     a.onloadedmetadata = () => setMusDur(a.duration || 0);
   }, [music]);
 
-  /* ---------- offsets -> preview jump ---------- */
+  /* offsets -> preview jump  */
   useEffect(() => {
     if (videoRef.current && bg?.type === 'video')
       videoRef.current.currentTime = vidOff;
@@ -122,7 +122,7 @@ export function BrandingSettings({
       audioRef.current.currentTime = musOff;
   };
 
-  /* ---------- handlers ---------- */
+  /*  handlers */
   const pickBg = (f: File) => {
     const url = URL.createObjectURL(f);
     const t = f.type.startsWith('video') ? 'video' : 'image';
@@ -163,7 +163,7 @@ export function BrandingSettings({
     onSettingsChange({ backgroundMusic: undefined });
   };
 
-  /* ---------- themes ---------- */
+  /*  themes */
   const themes = [
     { v: 'modern', l: 'Modern', bg: 'linear-gradient(135deg,#667eea 0%,#764ba2 50%,#667eea 100%)', t: '#fff' },
     { v: 'dark', l: 'Dark', bg: 'linear-gradient(135deg,#0f0f23 0%,#1a1a2e 50%,#16213e 100%)', t: '#fff' },
@@ -182,7 +182,7 @@ export function BrandingSettings({
     return arr;
   }, [firstQ]);
 
-  /* ---------- render ---------- */
+  /* render */
   return (
     <Card>
       <CardHeader className="pb-4 flex items-start gap-2">
@@ -370,7 +370,7 @@ export function BrandingSettings({
   );
 }
 
-/* ---------- helper components ---------- */
+/* helper components */
 function Section({
   label,
   icon,
